@@ -243,9 +243,11 @@ ARScene(
 Testing ARCore in the Android Emulator requires specific configuration to avoid black screen issues or camera errors.
 
 ### Recommended Configuration
-- **API Level**: 34 (Android 14) or 33 (Android 13). **Avoid API 36** as it may have compatibility issues with ARCore.
+- **Device**: **Pixel 6** or **Pixel 7** (Google hardware profile).
+- **API Level**: **33 (Android 13)**. This version is more stable for ARCore in the emulator than API 34+ or 36.
 - **CPU/ABI**: x86_64
 - **Rear Camera**: Must be set to **VirtualScene**.
+- **Graphics**: Set to **Hardware - GLES 2.0** (especially for AMD/Radeon GPUs).
 - **Services**: Install **Google Play Services for AR** (x86_64 build) manually.
 
 ### Troubleshooting
