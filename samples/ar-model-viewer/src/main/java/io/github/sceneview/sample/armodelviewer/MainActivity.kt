@@ -1,6 +1,7 @@
 package io.github.sceneview.sample.armodelviewer
 
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -10,9 +11,14 @@ import androidx.core.view.isGone
 import androidx.lifecycle.lifecycleScope
 import com.google.ar.core.Anchor
 import com.google.ar.core.Config
+import com.google.ar.core.HitResult
 import com.google.ar.core.Plane
 import com.google.ar.core.TrackingFailureReason
+import com.google.ar.core.TrackingState
+import android.view.MotionEvent
 import io.github.sceneview.ar.ARSceneView
+import io.github.sceneview.gesture.GestureDetector
+import io.github.sceneview.node.Node
 import io.github.sceneview.ar.arcore.getUpdatedPlanes
 import io.github.sceneview.ar.getDescription
 import io.github.sceneview.ar.node.AnchorNode
@@ -33,6 +39,8 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             field = value
             loadingView.isGone = !value
         }
+
+    var modelNode: ModelNode? = null
 
     var anchorNode: AnchorNode? = null
         set(value) {
@@ -78,21 +86,46 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                     true -> Config.DepthMode.AUTOMATIC
                     else -> Config.DepthMode.DISABLED
                 }
-                config.instantPlacementMode = Config.InstantPlacementMode.DISABLED
+                config.instantPlacementMode = Config.InstantPlacementMode.LOCAL_Y_UP
                 config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
             }
             onSessionUpdated = { _, frame ->
                 if (anchorNode == null) {
-                    frame.getUpdatedPlanes()
-                        .firstOrNull { it.type == Plane.Type.HORIZONTAL_UPWARD_FACING }
-                        ?.let { plane ->
+                    val camera = frame.camera
+                    if (camera.trackingState == TrackingState.TRACKING) {
+                        val plane = frame.getUpdatedPlanes()
+                            .firstOrNull { it.type == Plane.Type.HORIZONTAL_UPWARD_FACING }
+                        if (plane != null) {
+                            Log.d("SceneView", "Floor detected! Placing model...")
                             addAnchorNode(plane.createAnchor(plane.centerPose))
                         }
+                    }
+
+                    // Throttled log to see state every 2 seconds
+                    if (System.currentTimeMillis() % 2000 < 100) {
+                        Log.d("SceneView", "TrackingState: ${camera.trackingState}, Planes: ${frame.getUpdatedPlanes().size}")
+                    }
                 }
             }
             onTrackingFailureChanged = { reason ->
+                Log.d("SceneView", "Tracking failure: $reason")
                 this@MainActivity.trackingFailureReason = reason
             }
+            onGestureListener = object : GestureDetector.SimpleOnGestureListener() {
+                override fun onSingleTapConfirmed(e: MotionEvent, node: Node?) {
+                    if (anchorNode == null && node == null) {
+                        hitTestAR(e.x, e.y)?.let { hitResult ->
+                            Log.d("SceneView", "Manual tap detected! Placing model...")
+                            addAnchorNode(hitResult.createAnchor())
+                        }
+                    }
+                }
+            }
+        }
+
+        // Pre-load the model
+        lifecycleScope.launch {
+            modelNode = buildModelNode()
         }
 //        sceneView.viewNodeWindowManager = ViewAttachmentManager(context, this).apply { onResume() }
     }
@@ -101,7 +134,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         instructionText.text = trackingFailureReason?.let {
             it.getDescription(this)
         } ?: if (anchorNode == null) {
-            getString(R.string.point_your_phone_down)
+            "Mueve la cámara lento o toca el piso si no aparece el modelo"
         } else {
             null
         }
@@ -112,11 +145,16 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             AnchorNode(sceneView.engine, anchor)
                 .apply {
                     isEditable = true
-                    lifecycleScope.launch {
-                        isLoading = true
-                        buildModelNode()?.let { addChildNode(it) }
-//                        buildViewNode()?.let { addChildNode(it) }
-                        isLoading = false
+                    modelNode?.let {
+                        Log.d("SceneView", "Attaching pre-loaded model to anchor")
+                        addChildNode(it)
+                    } ?: run {
+                        Log.w("SceneView", "Model not ready yet, loading now...")
+                        lifecycleScope.launch {
+                            isLoading = true
+                            buildModelNode()?.let { addChildNode(it) }
+                            isLoading = false
+                        }
                     }
                     anchorNode = this
                 }
@@ -124,9 +162,11 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
     }
 
     suspend fun buildModelNode(): ModelNode? {
+        Log.d("SceneView", "Loading model...")
         sceneView.modelLoader.loadModelInstance(
             "https://sceneview.github.io/assets/models/DamagedHelmet.glb"
         )?.let { modelInstance ->
+            Log.d("SceneView", "Model loaded successfully")
             return ModelNode(
                 modelInstance = modelInstance,
                 // Scale to fit in a 0.5 meters cube
@@ -137,6 +177,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                 isEditable = true
             }
         }
+        Log.e("SceneView", "Failed to load model")
         return null
     }
 
