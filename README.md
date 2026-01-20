@@ -237,6 +237,24 @@ ARScene(
 - [AR Cloud Anchors](/samples/ar-cloud-anchor)
 - [AR Point Cloud](/samples/ar-point-cloud)
 
+
+## <a name="emulator-support"></a>Emulator Support
+
+Testing ARCore in the Android Emulator requires specific configuration to avoid black screen issues or camera errors.
+
+### Recommended Configuration
+- **API Level**: 34 (Android 14) or 33 (Android 13). **Avoid API 36** as it may have compatibility issues with ARCore.
+- **CPU/ABI**: x86_64
+- **Rear Camera**: Must be set to **VirtualScene**.
+- **Services**: Install **Google Play Services for AR** (x86_64 build) manually.
+
+### Troubleshooting
+If you encounter `Camera specified in device profile is not available` or a black screen:
+1.  Verify in **Advanced Settings** that `Camera Back` is set to **VirtualScene**.
+2.  Perform a **Wipe Data** on the emulator from the Device Manager.
+3.  Restart the emulator (**Cold Boot**).
+4.  Re-install the **Google Play Services for AR** APK.
+
 ## Resources
 
 ### Documentation
