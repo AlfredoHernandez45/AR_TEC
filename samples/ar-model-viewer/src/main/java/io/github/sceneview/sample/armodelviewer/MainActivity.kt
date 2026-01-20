@@ -41,6 +41,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         }
 
     var modelNode: ModelNode? = null
+    var modelUrl: String = "https://sceneview.github.io/assets/models/DamagedHelmet.glb" // Default value
 
     var anchorNode: AnchorNode? = null
         set(value) {
@@ -123,6 +124,8 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             }
         }
 
+        modelUrl = intent.getStringExtra("EXTRA_MODEL_URL") ?: modelUrl
+
         // Pre-load the model
         lifecycleScope.launch {
             modelNode = buildModelNode()
@@ -162,9 +165,9 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
     }
 
     suspend fun buildModelNode(): ModelNode? {
-        Log.d("SceneView", "Loading model...")
+        Log.d("SceneView", "Loading model: $modelUrl")
         sceneView.modelLoader.loadModelInstance(
-            "https://sceneview.github.io/assets/models/DamagedHelmet.glb"
+            modelUrl
         )?.let { modelInstance ->
             Log.d("SceneView", "Model loaded successfully")
             return ModelNode(
