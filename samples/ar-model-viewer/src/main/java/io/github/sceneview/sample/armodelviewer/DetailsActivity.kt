@@ -34,7 +34,7 @@ class DetailsActivity : AppCompatActivity(R.layout.activity_details) {
 
         findViewById<ImageView>(R.id.monumentDetailsImage).setOnClickListener {
             val intent = Intent(this, MainActivity::class.java).apply {
-                putExtra("EXTRA_MODEL_URL", monument.modelUrl)
+                putExtra("EXTRA_MODEL_RES_ID", monument.modelResId)
             }
             startActivity(intent)
         }

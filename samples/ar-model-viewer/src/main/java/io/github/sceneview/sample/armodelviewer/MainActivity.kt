@@ -27,6 +27,8 @@ import io.github.sceneview.node.ModelNode
 import io.github.sceneview.sample.doOnApplyWindowInsets
 import io.github.sceneview.sample.setFullScreen
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
@@ -41,7 +43,8 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         }
 
     var modelNode: ModelNode? = null
-    var modelUrl: String = "https://sceneview.github.io/assets/models/DamagedHelmet.glb" // Default value
+    var modelUrl: String? = null
+    var modelResId: Int = 0
 
     var anchorNode: AnchorNode? = null
         set(value) {
@@ -124,11 +127,14 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             }
         }
 
-        modelUrl = intent.getStringExtra("EXTRA_MODEL_URL") ?: modelUrl
+        modelResId = intent.getIntExtra("EXTRA_MODEL_RES_ID", 0)
+        modelUrl = intent.getStringExtra("EXTRA_MODEL_URL")
 
         // Pre-load the model
         lifecycleScope.launch {
+            isLoading = true
             modelNode = buildModelNode()
+            isLoading = false
         }
 //        sceneView.viewNodeWindowManager = ViewAttachmentManager(context, this).apply { onResume() }
     }
@@ -152,10 +158,13 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                         Log.d("SceneView", "Attaching pre-loaded model to anchor")
                         addChildNode(it)
                     } ?: run {
-                        Log.w("SceneView", "Model not ready yet, loading now...")
+                        Log.w("SceneView", "Model not ready yet, waiting for it...")
                         lifecycleScope.launch {
                             isLoading = true
-                            buildModelNode()?.let { addChildNode(it) }
+                            // If buildModelNode is already running, we might be reloading here.
+                            // To be safe, we call buildModelNode again but it will be on IO and won't block.
+                            modelNode = buildModelNode()
+                            modelNode?.let { addChildNode(it) }
                             isLoading = false
                         }
                     }
@@ -164,24 +173,34 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         )
     }
 
-    suspend fun buildModelNode(): ModelNode? {
-        Log.d("SceneView", "Loading model: $modelUrl")
-        sceneView.modelLoader.loadModelInstance(
-            modelUrl
-        )?.let { modelInstance ->
-            Log.d("SceneView", "Model loaded successfully")
-            return ModelNode(
-                modelInstance = modelInstance,
-                // Scale to fit in a 0.5 meters cube
-                scaleToUnits = 0.5f,
-                // Bottom origin instead of center so the model base is on floor
-                centerOrigin = Position(y = -0.5f)
-            ).apply {
-                isEditable = true
-            }
+    suspend fun buildModelNode(): ModelNode? = withContext(Dispatchers.IO) {
+        Log.d("SceneView", "Loading model: resId=$modelResId, url=$modelUrl")
+        val modelInstance = if (modelResId != 0) {
+            sceneView.modelLoader.createModelInstance(modelResId)
+        } else if (!modelUrl.isNullOrEmpty()) {
+            sceneView.modelLoader.loadModelInstance(modelUrl!!)
+        } else {
+            // Fallback to DamagedHelmet if nothing else is provided
+            sceneView.modelLoader.loadModelInstance("https://sceneview.github.io/assets/models/DamagedHelmet.glb")
         }
-        Log.e("SceneView", "Failed to load model")
-        return null
+
+        modelInstance?.let { instance ->
+            Log.d("SceneView", "Model loaded successfully")
+            withContext(Dispatchers.Main) {
+                ModelNode(
+                    modelInstance = instance,
+                    // Scale to fit in a 0.5 meters cube
+                    scaleToUnits = 0.5f,
+                    // Bottom origin instead of center so the model base is on floor
+                    centerOrigin = Position(y = -0.5f)
+                ).apply {
+                    isEditable = true
+                }
+            }
+        } ?: run {
+            Log.e("SceneView", "Failed to load model instance")
+            null
+        }
     }
 
 //    suspend fun buildViewNode(): ViewNode? {

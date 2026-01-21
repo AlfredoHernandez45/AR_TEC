@@ -8,8 +8,8 @@ data class Monument(
     val id: Int,
     val name: String,
     val description: String,
-    val imageResId: Int, // Placeholder for local images for now
-    val modelUrl: String,
+    val imageResId: Int,
+    val modelResId: Int,
     val latitude: Double,
     val longitude: Double
 ) : Parcelable

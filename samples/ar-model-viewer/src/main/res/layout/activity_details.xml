@@ -15,18 +15,16 @@
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/headerLayout"
             android:layout_width="match_parent"
-            android:layout_height="80dp"
+            android:layout_height="50dp"
             android:background="#154388"
             app:layout_constraintTop_toTopOf="parent">
 
             <ImageView
                 android:id="@+id/schoolLogo"
-                android:layout_width="wrap_content"
-                android:layout_height="60dp"
-                android:layout_marginStart="16dp"
-                android:adjustViewBounds="true"
-                android:src="@android:drawable/ic_menu_today"
-                app:layout_constraintBottom_toBottomOf="parent"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_margin="0dp"
+                android:src="@drawable/logo_tec"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
