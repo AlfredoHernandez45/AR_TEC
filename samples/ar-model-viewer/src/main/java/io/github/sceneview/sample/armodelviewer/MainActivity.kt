@@ -173,7 +173,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         )
     }
 
-    suspend fun buildModelNode(): ModelNode? = withContext(Dispatchers.IO) {
+    suspend fun buildModelNode(): ModelNode? {
         Log.d("SceneView", "Loading model: resId=$modelResId, url=$modelUrl")
         val modelInstance = if (modelResId != 0) {
             sceneView.modelLoader.createModelInstance(modelResId)
@@ -184,18 +184,16 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             sceneView.modelLoader.loadModelInstance("https://sceneview.github.io/assets/models/DamagedHelmet.glb")
         }
 
-        modelInstance?.let { instance ->
+        return modelInstance?.let { instance ->
             Log.d("SceneView", "Model loaded successfully")
-            withContext(Dispatchers.Main) {
-                ModelNode(
-                    modelInstance = instance,
-                    // Scale to fit in a 0.5 meters cube
-                    scaleToUnits = 0.5f,
-                    // Bottom origin instead of center so the model base is on floor
-                    centerOrigin = Position(y = -0.5f)
-                ).apply {
-                    isEditable = true
-                }
+            ModelNode(
+                modelInstance = instance,
+                // Scale to fit in a 0.5 meters cube
+                scaleToUnits = 0.5f,
+                // Bottom origin instead of center so the model base is on floor
+                centerOrigin = Position(y = -0.5f)
+            ).apply {
+                isEditable = true
             }
         } ?: run {
             Log.e("SceneView", "Failed to load model instance")

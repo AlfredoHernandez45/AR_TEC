@@ -7,6 +7,7 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import coil.load
 import io.github.sceneview.sample.setFullScreen
 
 class DetailsActivity : AppCompatActivity(R.layout.activity_details) {
@@ -30,11 +31,23 @@ class DetailsActivity : AppCompatActivity(R.layout.activity_details) {
 
         findViewById<TextView>(R.id.monumentTitle).text = monument.name
         findViewById<TextView>(R.id.monumentDescription).text = monument.description
-        findViewById<ImageView>(R.id.monumentDetailsImage).setImageResource(monument.imageResId)
+        val imageView = findViewById<ImageView>(R.id.monumentDetailsImage)
+        
+        if (monument.imageResId != null) {
+            imageView.setImageResource(monument.imageResId)
+        } else if (!monument.imageUrl.isNullOrEmpty()) {
+            imageView.load(monument.imageUrl) {
+                crossfade(true)
+            }
+        }
 
-        findViewById<ImageView>(R.id.monumentDetailsImage).setOnClickListener {
+        imageView.setOnClickListener {
             val intent = Intent(this, MainActivity::class.java).apply {
-                putExtra("EXTRA_MODEL_RES_ID", monument.modelResId)
+                if (monument.modelResId != null) {
+                    putExtra("EXTRA_MODEL_RES_ID", monument.modelResId)
+                } else if (!monument.modelUrl.isNullOrEmpty()) {
+                    putExtra("EXTRA_MODEL_URL", monument.modelUrl)
+                }
             }
             startActivity(intent)
         }

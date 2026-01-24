@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlinx.serialization)
     id("kotlin-parcelize")
 }
 
@@ -27,6 +28,9 @@ android {
 
 dependencies {
     implementation(projects.samples.common)
+    implementation(libs.fuel)
+    implementation(libs.coil)
+    implementation(libs.kotlinx.serialization.json)
 
     // ArSceneView
     releaseImplementation(libs.arsceneview)

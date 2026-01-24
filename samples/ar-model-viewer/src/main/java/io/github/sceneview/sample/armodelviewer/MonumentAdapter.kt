@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
 
 class MonumentAdapter(
     private val monuments: List<Monument>,
@@ -26,8 +27,17 @@ class MonumentAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val monument = monuments[position]
         holder.name.text = monument.name
-        // For now using placeholder, real app would use Glide/Coil
-        holder.image.setImageResource(monument.imageResId)
+        
+        if (monument.imageResId != null) {
+            holder.image.setImageResource(monument.imageResId)
+        } else if (!monument.imageUrl.isNullOrEmpty()) {
+            holder.image.load(monument.imageUrl) {
+                crossfade(true)
+                placeholder(android.R.drawable.progress_indeterminate_horizontal)
+                error(android.R.drawable.stat_notify_error)
+            }
+        }
+        
         holder.itemView.setOnClickListener { onMonumentClick(monument) }
     }
 
